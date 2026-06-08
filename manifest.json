@@ -1,0 +1,21 @@
+{
+  "name": "Volta Lake Emergency",
+  "short_name": "VLE Rescue",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0A1F3C",
+  "theme_color": "#0A1F3C",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
