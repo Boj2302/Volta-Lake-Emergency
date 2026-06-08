@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Volta Lake Rescue Dashboard</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore-compat.js"></script>
+
+<style>
+
+:root{
+  --navy:#081A2E;
+  --navy2:#102844;
+  --blue:#2C7BE5;
+  --green:#11A36A;
+  --red:#D93838;
+  --amber:#F59E0B;
+  --gray:#F4F7FA;
+  --card:#FFFFFF;
+  --text:#101828;
+  --text2:#667085;
+  --border:#E5E7EB;
+  --radius:18px;
+}
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--gray);
+  color:var(--text);
+}
+
+@media(max-width:768px){
+
+  .main{
+    padding:16px;
+  }
+
+  .topbar h2{
+    font-size:20px;
+  }
+
+  .stat-number{
+    font-size:28px;
+  }
+
+  .alert-card{
+    flex-direction:column;
+  }
+
+  .sidebar{
+    display:none;
+  }
+
+}
+
+
+.alert-card.sos {
+  border-left: 5px solid var(--red);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { background: #fff; }
+  50% { background: #ffeaea; }
+  100% { background: #fff; }
+}
+
+.dashboard{
+  display:flex;
+  min-height:100vh;
+}
+
+/* SIDEBAR */
+
+.sidebar{
+  width:280px;
+  background:var(--navy);
+  color:white;
+  padding:24px;
+  display:flex;
+  flex-direction:column;
+}
+
+.logo{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:40px;
+}
+
+.logo-icon{
+  width:48px;
+  height:48px;
+  border-radius:14px;
+  background:rgba(255,255,255,0.08);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:22px;
+}
+
+.logo h1{
+  font-size:18px;
+  font-weight:700;
+}
+
+.logo p{
+  font-size:12px;
+  color:#9FB7D1;
+}
+
+.menu{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.menu button{
+  background:none;
+  border:none;
+  color:#C7D7EA;
+  padding:14px;
+  border-radius:14px;
+  text-align:left;
+  font-size:14px;
+  cursor:pointer;
+  transition:0.2s;
+}
+
+.menu button:hover,
+.menu button.active{
+  background:rgba(255,255,255,0.08);
+  color:white;
+}
+
+/* MAIN */
+
+.main{
+  flex:1;
+  padding:28px;
+  overflow:auto;
+}
+
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:24px;
+}
+
+.topbar h2{
+  font-size:28px;
+}
+
+.topbar p{
+  color:var(--text2);
+  margin-top:4px;
+}
+
+.live-badge{
+  background:#E8FFF5;
+  color:var(--green);
+  padding:10px 16px;
+  border-radius:999px;
+  font-size:13px;
+  font-weight:600;
+}
+
+/* STATS */
+
+.stats{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:18px;
+  margin-bottom:28px;
+}
+
+.stat-card{
+  background:white;
+  border-radius:var(--radius);
+  padding:22px;
+  border:1px solid var(--border);
+}
+
+.stat-label{
+  color:var(--text2);
+  font-size:13px;
+  margin-bottom:10px;
+}
+
+.stat-number{
+  font-size:36px;
+  font-weight:700;
+}
+
+.red{ color:var(--red); }
+.green{ color:var(--green); }
+.blue{ color:var(--blue); }
+.amber{ color:var(--amber); }
+
+/* CONTENT GRID */
+
+.content{
+  display:grid;
+  grid-template-columns:1.1fr 0.9fr;
+  gap:22px;
+}
+
+@media(max-width:1000px){
+  .content{
+    grid-template-columns:1fr;
+  }
+
+  .sidebar{
+    display:none;
+  }
+}
+
+/* ALERT FEED */
+
+.panel{
+  background:white;
+  border-radius:var(--radius);
+  border:1px solid var(--border);
+  overflow:hidden;
+}
+
+.panel-header{
+  padding:18px 22px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.panel-header h3{
+  font-size:16px;
+}
+
+.alert-list{
+  max-height:700px;
+  overflow:auto;
+}
+
+.alert-card{
+  padding:20px 22px;
+  border-bottom:1px solid #F1F3F5;
+  display:flex;
+  gap:16px;
+}
+
+.alert-card:last-child{
+  border-bottom:none;
+}
+
+.alert-dot{
+  width:14px;
+  height:14px;
+  border-radius:50%;
+  margin-top:6px;
+  flex-shrink:0;
+}
+
+.dot-sos{ background:var(--red); }
+.dot-fire{ background:var(--amber); }
+.dot-sink{ background:var(--blue); }
+
+.alert-body{
+  flex:1;
+}
+
+.alert-top{
+  display:flex;
+  justify-content:space-between;
+  margin-bottom:8px;
+}
+
+.alert-title{
+  font-size:16px;
+  font-weight:700;
+}
+
+.alert-time{
+  font-size:12px;
+  color:var(--text2);
+}
+
+.alert-meta{
+  font-size:14px;
+  color:var(--text2);
+  line-height:1.7;
+  
+}
+
+.alert-actions{
+  display:flex;
+  gap:10px;
+  margin-top:14px;
+}
+
+.alert-actions button{
+  border:none;
+  padding:10px 14px;
+  border-radius:10px;
+  cursor:pointer;
+  font-size:13px;
+  font-weight:600;
+}
+
+.dispatch-btn{
+  background:var(--blue);
+  color:white;
+}
+
+.resolve-btn{
+  background:#EEF2F7;
+  color:var(--text);
+}
+
+/* MAP */
+
+.map-box{
+  height:380px;
+  background:#DDE7F3;
+  position:relative;
+}
+
+.map-box iframe{
+  width:100%;
+  height:100%;
+  border:none;
+}
+
+.map-placeholder{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:#6B7280;
+  font-size:15px;
+}
+
+/* ACTIVE BOATS */
+
+.boat-list{
+  padding:18px 22px;
+}
+
+.boat-card{
+  padding:16px;
+  border:1px solid var(--border);
+  border-radius:14px;
+  margin-bottom:12px;
+}
+
+.boat-card:last-child{
+  margin-bottom:0;
+}
+
+.boat-name{
+  font-weight:700;
+  margin-bottom:4px;
+}
+
+.boat-meta{
+  color:var(--text2);
+  font-size:13px;
+  line-height:1.6;
+}
+
+/* STATUS */
+
+.status-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:600;
+  margin-top:8px;
+}
+
+.status-active{
+  background:#FFEAEA;
+  color:var(--red);
+}
+
+.status-resolved{
+  background:#E8FFF5;
+  color:var(--green);
+}
+
+.empty{
+  padding:40px;
+  text-align:center;
+  color:var(--text2);
+}
+
+</style>
+</head>
+<body>
+
+<div class="dashboard">
+
+  <!-- SIDEBAR -->
+
+  <div class="sidebar">
+
+    <div class="logo">
+      <div class="logo-icon">🚨</div>
+      <div>
+        <h1>Volta Rescue</h1>
+        <p>Emergency Command Center</p>
+      </div>
+    </div>
+
+    <div class="menu">
+      <button class="active">Live Emergencies</button>
+      <button>Rescue Dispatch</button>
+      <button>Boat Tracking</button>
+      <button>Emergency Logs</button>
+      <button>Rescue Units</button>
+      <button>Settings</button>
+    </div>
+
+  </div>
+
+  <!-- MAIN -->
+
+  <div class="main">
+
+    <div class="topbar">
+
+  <div>
+    <h2>Live Rescue Dashboard</h2>
+    <p>Real-time Volta Lake emergency monitoring system</p>
+  </div>
+
+  <div style="display:flex; gap:10px; align-items:center;">
+
+    <div class="live-badge">
+      ● LIVE SYSTEM ONLINE
+    </div>
+
+    <div class="live-badge" style="background:#FFF4E5; color:#F59E0B;">
+      ● LIVE MODE ACTIVE
+    </div>
+
+  </div>
+
+</div>
+
+    <!-- STATS -->
+
+    <div class="stats">
+
+      <div class="stat-card">
+        <div class="stat-label">Active Emergencies</div>
+        <div class="stat-number red" id="active-count">0</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">SOS Alerts</div>
+        <div class="stat-number amber" id="sos-count">0</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Fire Emergencies</div>
+        <div class="stat-number red" id="fire-count">0</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-label">Boat Sinkings</div>
+        <div class="stat-number blue" id="sink-count">0</div>
+      </div>
+
+    </div>
+
+    <!-- CONTENT -->
+
+    <div class="content">
+
+      <!-- LEFT -->
+
+      <div>
+
+        <div class="panel">
+
+          <div class="panel-header">
+            <h3>Live Emergency Feed</h3>
+          </div>
+
+          <div class="alert-list" id="alert-list">
+
+            <div class="empty">
+              Waiting for emergency alerts...
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- RIGHT -->
+
+      <div>
+
+        <!-- MAP -->
+
+        <div class="panel" style="margin-bottom:22px;">
+
+          <div class="panel-header">
+            <h3>Emergency Location Map</h3>
+          </div>
+
+          <div class="map-box">
+
+            <div class="map-placeholder" id="map-placeholder">
+              No emergency location selected
+            </div>
+
+            <iframe
+              id="map-frame"
+              style="display:none;"
+              loading="lazy">
+            </iframe>
+
+          </div>
+
+        </div>
+
+        <!-- ACTIVE BOATS -->
+
+        <div class="panel">
+
+          <div class="panel-header">
+            <h3>Boats In Distress</h3>
+          </div>
+
+          <div class="boat-list" id="boat-list">
+
+            <div class="empty">
+              No active rescue operations
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAueQBDx8s4pzruZFgEE1tpCpUkc6KdHD4",
+  authDomain: "volta-lake-emergency-51ad7.firebaseapp.com",
+  projectId: "volta-lake-emergency-51ad7",
+  storageBucket: "volta-lake-emergency-51ad7.firebasestorage.app",
+  messagingSenderId: "259880645633",
+  appId: "1:259880645633:web:53997a254fa7188eb2bc00"
+};
+
+let db;
+
+function startListener() {
+  db.collection("emergencyAlerts")
+    .orderBy("time", "desc")
+    .onSnapshot(snapshot => {
+
+      let alerts = [];
+
+      snapshot.forEach(doc => {
+        alerts.push({ id: doc.id, ...doc.data() });
+      });
+
+      renderDashboard(alerts);
+
+    }, (error) => {
+      console.error("Firestore error:", error);
+    });
+}
+
+function initFirebase() {
+  if (typeof firebase === 'undefined') {
+    console.error('Firebase CDN failed to load. Check network connection.');
+    document.getElementById('alert-list').innerHTML =
+      '<div class="empty">⚠️ Firebase failed to load. Check your internet connection.</div>';
+    return;
+  }
+
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+  startListener();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initFirebase);
+} else {
+  initFirebase();
+}
+
+/* RENDER DASHBOARD */
+
+function renderDashboard(alerts){
+
+  renderStats(alerts);
+
+  renderAlerts(alerts);
+
+  renderBoats(alerts);
+
+}
+
+/* STATS */
+
+function renderStats(alerts){
+
+  const active =
+    alerts.filter(a => a.status === "ACTIVE");
+
+  document.getElementById("active-count")
+    .textContent = active.length;
+
+  document.getElementById("sos-count")
+    .textContent =
+      alerts.filter(a =>
+        a.alertKey === "sos"
+      ).length;
+
+  document.getElementById("fire-count")
+    .textContent =
+      alerts.filter(a =>
+        a.alertKey === "fire"
+      ).length;
+
+  document.getElementById("sink-count")
+    .textContent =
+      alerts.filter(a =>
+        a.alertKey === "sink"
+      ).length;
+}
+
+/* ALERT FEED */
+
+function renderAlerts(alerts){
+
+  const list =
+    document.getElementById("alert-list");
+
+  if(alerts.length === 0){
+
+    list.innerHTML = `
+      <div class="empty">
+        Waiting for emergency alerts...
+      </div>
+    `;
+
+    return;
+  }
+
+  list.innerHTML = "";
+
+  alerts.forEach(alert => {
+
+    const div =
+      document.createElement("div");
+
+    div.className = "alert-card " + alert.alertKey;
+
+    div.innerHTML = `
+
+      <div class="alert-dot dot-${alert.alertKey}">
+      </div>
+
+      <div class="alert-body">
+
+        <div class="alert-top">
+
+          <div class="alert-title">
+            ${alert.alertType}
+          </div>
+
+          <div class="alert-time">
+            ${formatTime(alert.time)}
+          </div>
+
+        </div>
+
+        <div class="alert-meta">
+
+          <strong>Recipients:</strong>
+          ${alert.recipients
+            ? alert.recipients.join(", ")
+            : "N/A"}
+
+          <br><br>
+
+          <strong>Location:</strong>
+
+          ${
+            alert.location
+            ? alert.location.lat
+              + ", "
+              + alert.location.lng
+            : "No GPS"
+          }
+
+        </div>
+
+        <div class="status-pill ${
+          alert.status === "RESOLVED"
+          ? "status-resolved"
+          : "status-active"
+        }">
+
+          ${
+            alert.status === "RESOLVED"
+            ? "✓ RESOLVED"
+            : "● ACTIVE"
+          }
+
+        </div>
+
+        <div class="alert-actions">
+
+          <button
+            class="dispatch-btn"
+            onclick="viewLocation(
+              ${alert.location?.lat || 0},
+              ${alert.location?.lng || 0}
+            )">
+
+            View Map
+
+          </button>
+
+          <button
+            class="resolve-btn"
+            onclick="resolveAlert('${alert.id}')">
+
+            Resolve
+
+          </button>
+
+        </div>
+
+      </div>
+    `;
+
+    list.appendChild(div);
+
+  });
+
+}
+
+/* MAP */
+
+function viewLocation(lat,lng){
+
+  if(!lat || !lng) return;
+
+  document.getElementById("map-placeholder")
+    .style.display = "none";
+
+  const frame =
+    document.getElementById("map-frame");
+
+  frame.style.display = "block";
+
+  frame.src =
+    "https://maps.google.com/maps?q="
+    + lat + "," + lng +
+    "&z=15&output=embed";
+}
+
+/* BOATS */
+
+function renderBoats(alerts){
+
+  const active =
+    alerts.filter(a =>
+      a.status === "ACTIVE"
+    );
+
+  const list =
+    document.getElementById("boat-list");
+
+  if(active.length === 0){
+
+    list.innerHTML = `
+      <div class="empty">
+        No active rescue operations
+      </div>
+    `;
+
+    return;
+  }
+
+  list.innerHTML = "";
+
+  active.forEach(alert => {
+
+    const div =
+      document.createElement("div");
+
+    div.className = "boat-card";
+
+    div.innerHTML = `
+
+      <div class="boat-name">
+        ${alert.alertType}
+      </div>
+
+      <div class="boat-meta">
+
+        Coordinates:
+        ${
+          alert.location
+          ? alert.location.lat
+            + ", "
+            + alert.location.lng
+          : "Unavailable"
+        }
+
+        <br>
+
+        Recipients:
+        ${
+          alert.recipients
+          ? alert.recipients.length
+          : 0
+        }
+
+      </div>
+
+      <div class="status-pill status-active">
+        ACTIVE DISTRESS
+      </div>
+
+    `;
+
+    list.appendChild(div);
+
+  });
+
+}
+
+/* RESOLVE ALERT */
+
+function resolveAlert(id){
+
+  db.collection("emergencyAlerts")
+    .doc(id)
+    .update({
+      status:"RESOLVED"
+    });
+
+}
+
+/* TIME */
+
+function formatTime(timestamp){
+
+  if(!timestamp) return "Now";
+
+  try{
+
+    let date =
+      timestamp.toDate
+      ? timestamp.toDate()
+      : new Date(timestamp);
+
+    return date.toLocaleString();
+
+  }catch(e){
+
+    return "Unknown";
+
+  }
+}
+
+</script>
+
+</body>
+</html>
